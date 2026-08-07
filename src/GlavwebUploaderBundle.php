@@ -55,6 +55,10 @@ class GlavwebUploaderBundle extends AbstractBundle
         $mappings = &$config['mappings'];
 
         foreach ($mappings as &$contextConfig) {
+            if (!$contextConfig['extend_defaults']) {
+                continue;
+            }
+
             foreach ($contextConfig as $key => $value) {
                 if (([] === $value) || null === $value) {
                     $contextConfig[$key] = $defaults[$key];
