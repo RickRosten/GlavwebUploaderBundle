@@ -12,12 +12,12 @@
 namespace Glavweb\UploaderBundle\Manager;
 
 use Glavweb\UploaderBundle\Driver\AttributeDriver;
-use Glavweb\UploaderBundle\Entity\Media;
 use Glavweb\UploaderBundle\Exception\CropImageException;
 use Glavweb\UploaderBundle\Exception\ProviderNotFoundException;
 use Glavweb\UploaderBundle\File\FileInterface;
 use Glavweb\UploaderBundle\Model\MediaInterface;
 use Glavweb\UploaderBundle\Model\ModelManagerInterface;
+use Glavweb\UploaderBundle\Naming\NamerInterface;
 use Glavweb\UploaderBundle\Provider\ImageProvider;
 use Glavweb\UploaderBundle\Provider\ProviderFileInterface;
 use Glavweb\UploaderBundle\Provider\ProviderInterface;
@@ -199,6 +199,7 @@ class UploaderManager
         $directory = $this->getContextConfig($context, 'upload_directory');
 
         // Upload file
+        /** @var NamerInterface $namer */
         $namer = $this->container->get($this->getContextConfig($context, 'namer'));
         $name = $namer->name($file);
 
@@ -296,6 +297,34 @@ class UploaderManager
         $this->renameMarkedMedia($requestId);
 
         return $this->uploadOrphans($requestId);
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function copyMedia(MediaInterface $media): MediaInterface
+    {
+        $directory = $this->getContextConfig($media->getContext(), 'upload_directory');
+        $name = $media->getContentPath();
+        $thumbnailPath = $media->getThumbnailPath();
+
+        $file = $this->getStorage()->getFile($directory, $name);
+        $fileCopy = $file->copy();
+        $copyName = $fileCopy->getBasename();
+
+        $thumbnailPath = $thumbnailPath === $name ? $copyName : $thumbnailPath;
+
+        $mediaCopy = (clone $media)
+            ->setContentPath($copyName)
+            ->setThumbnailPath($thumbnailPath)
+            ->setToken(null)
+            ->setRequestId(null)
+            ->setIsOrphan(false);
+
+        $this->getModelManager()->updateMedia($mediaCopy);
+
+        return $mediaCopy;
     }
 
     /**
@@ -452,7 +481,7 @@ class UploaderManager
      * @throws CropImageException
      * @throws NotFoundExceptionInterface
      */
-    public function cropImage(Media $media, array $cropData): void
+    public function cropImage(MediaInterface $media, array $cropData): void
     {
         $storage = $this->getStorage();
         $context = $media->getContext();

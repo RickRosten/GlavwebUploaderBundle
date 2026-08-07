@@ -14,6 +14,55 @@ use Symfony\Component\HttpFoundation\File\File;
  */
 class FileUtils
 {
+    public static function path(string ...$parts): string
+    {
+        return implode(\DIRECTORY_SEPARATOR, $parts);
+    }
+
+    public static function appendExtension(string $filePath, ?string $extension): string
+    {
+        if ($extension) {
+            return $filePath.'.'.$extension;
+        }
+
+        return $filePath;
+    }
+
+    public static function generateFileCopyBasename(FileInterface $file, ?callable $isNameAllowed = null): string
+    {
+        $fileInfo = pathinfo($file->getPathname());
+
+        $name = $fileInfo['filename'];
+        $extension = $fileInfo['extension'] ?? null;
+        $newCopyNumber = 0;
+        $regexp = '/_copy(?:_(\d+))?$/';
+        $originalName = $name;
+
+        preg_match($regexp, $name, $matches);
+
+        if ($matches) {
+            [$match, $copyNumber] = $matches;
+
+            if ($match) {
+                if ($copyNumber) {
+                    $newCopyNumber = (int) $copyNumber + 1;
+                } else {
+                    $newCopyNumber = 1;
+                }
+
+                $originalName = preg_replace($regexp, '', $name);
+            }
+        }
+
+        do {
+            $newName = $originalName.'_copy'.($newCopyNumber > 0 ? '_'.$newCopyNumber : '');
+            $newNameWithExtension = self::appendExtension($newName, $extension);
+            ++$newCopyNumber;
+        } while ($isNameAllowed && !$isNameAllowed($newNameWithExtension));
+
+        return $newNameWithExtension;
+    }
+
     public static function saveFileWithNewVersion(FileInterface $file): string
     {
         $pathParts = pathinfo($file->getPathname());

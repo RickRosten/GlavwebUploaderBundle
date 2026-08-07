@@ -12,6 +12,7 @@
 namespace Glavweb\UploaderBundle\Storage;
 
 use Glavweb\UploaderBundle\Exception\CropImageException;
+use Glavweb\UploaderBundle\Exception\FileCopyException;
 use Glavweb\UploaderBundle\File\FileInterface;
 
 /**
@@ -39,6 +40,11 @@ interface StorageInterface
     public function isFile($directory, $name): bool;
 
     public function removeFile(FileInterface $file);
+
+    /**
+     * @throws FileCopyException
+     */
+    public function copyFile(FileInterface $file, ?string $newPath = null): FileInterface;
 
     /**
      * @throws CropImageException

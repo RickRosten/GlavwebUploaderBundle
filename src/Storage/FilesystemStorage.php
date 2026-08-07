@@ -142,6 +142,21 @@ class FilesystemStorage implements StorageInterface
         $filesystem->remove($file->getPathname());
     }
 
+    public function copyFile(FileInterface $file, ?string $newPath = null): FileInterface
+    {
+        if ($file instanceof FilesystemFile) {
+            if ($newPath) {
+                $fileInfo = new \SplFileInfo($newPath);
+
+                return $file->copy($fileInfo->getPath(), $fileInfo->getBasename());
+            }
+
+            return $file->copy();
+        }
+
+        throw new \InvalidArgumentException('FilesystemStorage::copyFile() supports only FilesystemFile.');
+    }
+
     /**
      * @throws CropImageException
      */

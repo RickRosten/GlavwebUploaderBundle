@@ -84,4 +84,14 @@ interface FileInterface
      * @return static A File object representing the new file
      */
     public function move(string $directory, ?string $name = null): static;
+
+    /**
+     * Creates a copy of the file.
+     *
+     * @param string|null $directory The destination folder
+     * @param string|null $name      The new file name
+     *
+     * @return FileInterface A File object representing the new file
+     */
+    public function copy(?string $directory = null, ?string $name = null): FileInterface;
 }

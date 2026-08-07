@@ -140,15 +140,34 @@ class FlysystemFile implements FileInterface
     /**
      * @throws FilesystemException
      */
-    public function move($directory, $name = null): static
+    public function move(string $directory, ?string $name = null): static
     {
+        if (!$name) {
+            $name = $this->getBasename();
+        }
+
         $newPath = \sprintf('%s/%s', $directory, $name);
 
-        $this->storage->move($this, $newPath);
+        $this->storage->moveFile($this, $newPath);
 
         $this->pathname = $newPath;
 
         return $this;
+    }
+
+    public function copy(?string $directory = null, ?string $name = null): FileInterface
+    {
+        $newPath = null;
+
+        if ($directory) {
+            if (!$name) {
+                $name = $this->getBasename();
+            }
+
+            $newPath = \sprintf('%s/%s', $directory, $name);
+        }
+
+        return $this->storage->copyFile($this, $newPath);
     }
 
     /**
