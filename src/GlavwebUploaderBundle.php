@@ -23,6 +23,17 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  */
 class GlavwebUploaderBundle extends AbstractBundle
 {
+    public const DEFAULT_MAPPINGS_VALUES = [
+        'route_prefix' => '',
+        'max_size' => \PHP_INT_MAX,
+        'max_files' => \PHP_INT_MAX,
+        'use_orphanage' => false,
+        'namer' => 'glavweb_uploader.namer.uniqid',
+        'providers' => [],
+        'allowed_mimetypes' => [],
+        'disallowed_mimetypes' => [],
+    ];
+
     public function configure(DefinitionConfigurator $definition): void
     {
         $definition->import(__DIR__.'/../config/definition.php');
@@ -51,22 +62,20 @@ class GlavwebUploaderBundle extends AbstractBundle
      */
     private function applyMappingsDefaults(array $config): array
     {
-        $defaults = $config['mappings_defaults'];
         $mappings = &$config['mappings'];
 
         foreach ($mappings as &$contextConfig) {
-            if (!$contextConfig['extend_defaults']) {
-                continue;
-            }
-
-            foreach ($contextConfig as $key => $value) {
-                if (([] === $value) || null === $value) {
-                    $contextConfig[$key] = $defaults[$key];
-                }
-            }
+            $extendDefaults = $contextConfig['extend_defaults'];
+            $defaults = $extendDefaults ? $config['mappings_defaults'] : self::DEFAULT_MAPPINGS_VALUES;
 
             foreach ($defaults as $defaultKey => $defaultValue) {
-                if (!isset($contextConfig[$defaultKey])) {
+                $value = $contextConfig[$defaultKey] ?? null;
+
+                if ($extendDefaults && \is_array($value) && \is_array($defaultValue)) {
+                    $contextConfig[$defaultKey] = array_unique(array_merge($defaultValue, $value));
+                }
+
+                if (null === $value) {
                     $contextConfig[$defaultKey] = $defaultValue;
                 }
             }
