@@ -67,10 +67,10 @@ class AwsS3Storage implements StorageInterface
             'SourceFile' => $file->getPathname(),
             'ContentType' => $mimeType,
             'Metadata' => [
-                'is-image' => $file->isImage() ? 1 : 0,
-                'width' => $file->getWidth() ?: 0,
-                'height' => $file->getHeight() ?: 0,
-                'original-name' => base64_encode($file->getClientOriginalName()),
+                'Is-Image' => $file->isImage() ? 1 : 0,
+                'Width' => $file->getWidth() ?: 0,
+                'Height' => $file->getHeight() ?: 0,
+                'Original-Name' => base64_encode($file->getClientOriginalName()),
             ],
         ]);
 
@@ -271,10 +271,10 @@ class AwsS3Storage implements StorageInterface
         $metadata->size = (int) $object['ContentLength'];
         $metadata->mimeType = $object['ContentType'];
         $metadata->modificationTime = new \DateTime($object['LastModified']);
-        $metadata->isImage = (bool) ($object['Metadata']['is-image'] ?? null);
-        $metadata->width = (int) ($object['Metadata']['width'] ?? 0);
-        $metadata->height = (int) ($object['Metadata']['height'] ?? 0);
-        $metadata->originalName = base64_decode($object['Metadata']['original-name'] ?? '');
+        $metadata->isImage = (bool) ($object['Metadata']['Is-Image'] ?? null);
+        $metadata->width = (int) ($object['Metadata']['Width'] ?? 0);
+        $metadata->height = (int) ($object['Metadata']['Height'] ?? 0);
+        $metadata->originalName = base64_decode($object['Metadata']['Original-Name'] ?? '');
 
         return $metadata;
     }
@@ -352,10 +352,10 @@ class AwsS3Storage implements StorageInterface
             'ContentType' => $metadata->mimeType,
             'MetadataDirective' => 'REPLACE',
             'Metadata' => [
-                'is-image' => $metadata->isImage ? 1 : 0,
-                'width' => $metadata->width ?: 0,
-                'height' => $metadata->height ?: 0,
-                'original-name' => base64_encode($metadata->originalName),
+                'Is-Image' => $metadata->isImage ? 1 : 0,
+                'Width' => $metadata->width ?: 0,
+                'Height' => $metadata->height ?: 0,
+                'Original-Name' => base64_encode($metadata->originalName),
             ],
         ]);
 
