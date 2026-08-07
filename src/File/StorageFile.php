@@ -242,7 +242,7 @@ class StorageFile implements FileInterface
         return $this->height;
     }
 
-    public function setHeight(int $height): static
+    public function setHeight(?int $height): static
     {
         $this->height = $height;
 
@@ -258,7 +258,7 @@ class StorageFile implements FileInterface
         return $this->width;
     }
 
-    public function setWidth(int $width): static
+    public function setWidth(?int $width): static
     {
         $this->width = $width;
 
