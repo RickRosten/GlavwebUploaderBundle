@@ -368,11 +368,18 @@ class AwsS3Storage implements StorageInterface
 
         foreach ($this->multipartUploadManager->list() as $multipartUpload) {
             if ($multipartUpload->getLastModifiedAt() < $actualTime) {
-                $this->client->abortMultipartUpload([
-                    'Bucket' => $this->bucket,
-                    'Key' => $multipartUpload->getKey(),
-                    'UploadId' => $multipartUpload->getId(),
-                ]);
+                try {
+                    $this->client->abortMultipartUpload([
+                        'Bucket' => $this->bucket,
+                        'Key' => $multipartUpload->getKey(),
+                        'UploadId' => $multipartUpload->getId(),
+                    ]);
+                } catch (S3Exception $e) {
+                    if ('NoSuchUpload' !== $e->getAwsErrorCode()) {
+                        throw $e;
+                    }
+                }
+
                 $this->multipartUploadManager->delete($multipartUpload);
             }
         }
