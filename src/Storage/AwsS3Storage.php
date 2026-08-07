@@ -65,12 +65,13 @@ class AwsS3Storage implements StorageInterface
             'Bucket' => $this->bucket,
             'Key' => $path,
             'SourceFile' => $file->getPathname(),
+            'ContentDisposition' => $attachment ? 'attachment' : 'inline',
             'ContentType' => $mimeType,
             'Metadata' => [
                 'Is-Image' => $file->isImage() ? 1 : 0,
                 'Width' => $file->getWidth() ?: 0,
                 'Height' => $file->getHeight() ?: 0,
-                'Original-Name' => base64_encode($file->getClientOriginalName()),
+                'Original-Name' => base64_encode($originalName),
             ],
         ]);
 

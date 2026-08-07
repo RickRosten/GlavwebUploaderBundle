@@ -32,6 +32,7 @@ class GlavwebUploaderBundle extends AbstractBundle
         'providers' => [],
         'allowed_mimetypes' => [],
         'disallowed_mimetypes' => [],
+        'attachment' => false,
     ];
 
     public function configure(DefinitionConfigurator $definition): void

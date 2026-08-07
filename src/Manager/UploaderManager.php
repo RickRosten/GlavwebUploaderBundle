@@ -194,6 +194,7 @@ class UploaderManager
     public function uploadFile(FileInterface $file, string $context): FileInterface
     {
         $directory = $this->getContextConfig($context, 'upload_directory');
+        $attachment = $this->getContextConfig($context, 'attachment');
 
         // Upload file
         /** @var NamerInterface $namer */
@@ -202,7 +203,7 @@ class UploaderManager
 
         $this->checkHackingName($name);
 
-        return $this->getStorage()->upload($file, $directory, $name);
+        return $this->getStorage()->upload($file, $directory, $name, $attachment);
     }
 
     /**
