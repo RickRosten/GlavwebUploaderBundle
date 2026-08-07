@@ -15,6 +15,7 @@ use Glavweb\UploaderBundle\Driver\AttributeDriver;
 use Glavweb\UploaderBundle\Exception\CropImageException;
 use Glavweb\UploaderBundle\Exception\ProviderNotFoundException;
 use Glavweb\UploaderBundle\File\FileInterface;
+use Glavweb\UploaderBundle\File\FileMetadata;
 use Glavweb\UploaderBundle\Model\MediaInterface;
 use Glavweb\UploaderBundle\Model\ModelManagerInterface;
 use Glavweb\UploaderBundle\Naming\NamerInterface;
@@ -28,9 +29,8 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -59,14 +59,11 @@ class UploaderManager
 
     private ?RequestStack $requestStack = null;
 
-    private readonly Filesystem $filesystem;
-
     public function __construct(
         private array $config,
         private readonly ContainerInterface $container,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
-        $this->filesystem = new Filesystem();
     }
 
     /**
@@ -379,35 +376,24 @@ class UploaderManager
 
     /**
      * Clear orphanage.
+     *
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function clearOrphanage(): void
     {
         $this->getModelManager()->removeOrphans($this->config['orphanage']['lifetime']);
 
-        $chunkedUploadDirectoryPath = $this->getChunkedUploadDirectoryPath();
+        $this->getStorage()->cleanup();
+    }
 
-        if (!is_dir($chunkedUploadDirectoryPath)) {
-            return;
-        }
-
-        $oldFilesFinder = new Finder();
-        $oldFilesFinder->in($chunkedUploadDirectoryPath)
-                       ->files()
-                       ->date('before 1 hour ago');
-
-        $this->filesystem->remove(iterator_to_array($oldFilesFinder));
-
-        $emptyDirFinder = new Finder();
-        $emptyDirFinder->in($chunkedUploadDirectoryPath)
-            ->directories()
-            ->filter(static function (\SplFileInfo $dirInfo): bool {
-                $dirFinder = new Finder();
-                $dirFinder->in($dirInfo->getRealPath())->files();
-
-                return !$dirFinder->count();
-            });
-
-        $this->filesystem->remove(iterator_to_array($emptyDirFinder));
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function removeFileFromStorage(FileInterface $file): void
+    {
+        $this->getStorage()->removeFile($file);
     }
 
     /**
@@ -515,7 +501,7 @@ class UploaderManager
     /**
      * @throws \Exception
      */
-    public function handleChunkUpload(Request $request, File $file): ?File
+    public function handleChunkUpload(Request $request, File $file): ?FileInterface
     {
         $config = $this->config['chunk_upload'];
         $payload = $request->getPayload();
@@ -523,104 +509,23 @@ class UploaderManager
         $chunkIndex = $payload->get($config['current_index_request_parameter']);
         $chunkTotal = $payload->get($config['total_count_request_parameter']);
 
-        $this->addFileChunk($file, $fileId, $chunkIndex);
+        $this->getStorage()->addFileChunk($file, $fileId, $chunkIndex);
 
-        if ($this->hasAllFileChunks($fileId, $chunkTotal)) {
-            return $this->concatFileChunks($fileId);
+        if ($this->getStorage()->hasAllFileChunks($fileId, $chunkTotal)) {
+            $imageWidth = $payload->get($config['image_width_request_parameter']);
+            $imageHeight = $payload->get($config['image_height_request_parameter']);
+            $mimeType = $payload->get($config['type_request_parameter']);
+
+            $metadata = new FileMetadata();
+            $metadata->originalName = $file instanceof UploadedFile ? $file->getClientOriginalName() : null;
+            $metadata->mimeType = $mimeType;
+            $metadata->width = $imageWidth ? (int) $imageWidth : 0;
+            $metadata->height = $imageHeight ? (int) $imageHeight : 0;
+            $metadata->isImage = str_starts_with((string) $mimeType, 'image');
+
+            return $this->getStorage()->concatFileChunks($file, $metadata, $fileId);
         }
 
         return null;
-    }
-
-    public function addFileChunk(File $file, string $fileId, int $chunkIndex): void
-    {
-        $chunksDirectoryPath = $this->getChunksDirectoryPath($fileId);
-        $targetPath = $chunksDirectoryPath.\DIRECTORY_SEPARATOR.$chunkIndex;
-
-        $this->filesystem->mkdir($chunksDirectoryPath);
-        $this->filesystem->rename($file->getRealPath(), $targetPath);
-    }
-
-    public function hasAllFileChunks(string $fileId, int $chunkTotal): bool
-    {
-        $finder = new Finder();
-
-        $chunksDirectoryPath = $this->getChunksDirectoryPath($fileId);
-
-        $finder->in($chunksDirectoryPath)->files();
-
-        if ($finder->count() === $chunkTotal) {
-            foreach ($finder as $chunk) {
-                if (!is_readable($chunk->getRealPath())) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @throws \Exception
-     */
-    public function concatFileChunks(string $fileId): File
-    {
-        $finder = new Finder();
-
-        $chunksDirectoryPath = $this->getChunksDirectoryPath($fileId);
-        $fileDirectoryPath = $this->getConcatenatedFileDirectoryPath();
-        $filePath = $fileDirectoryPath.\DIRECTORY_SEPARATOR.$fileId;
-
-        $finder->in($chunksDirectoryPath)->files()->sortByName(true);
-
-        $this->filesystem->mkdir($fileDirectoryPath);
-
-        try {
-            $target = fopen($filePath, 'a');
-
-            foreach ($finder as $chunk) {
-                try {
-                    $source = fopen($chunk->getRealPath(), 'r');
-                    stream_copy_to_stream($source, $target);
-
-                    $this->filesystem->remove($chunk->getRealPath());
-                } finally {
-                    if (isset($source) && \is_resource($source)) {
-                        fclose($source);
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            $this->filesystem->remove($filePath);
-
-            throw $e;
-        } finally {
-            if (isset($target) && \is_resource($target)) {
-                fclose($target);
-            }
-
-            $this->filesystem->remove($chunksDirectoryPath);
-        }
-
-        return new File($filePath);
-    }
-
-    private function getConcatenatedFileDirectoryPath(): string
-    {
-        return $this->getChunkedUploadDirectoryPath().\DIRECTORY_SEPARATOR.'files';
-    }
-
-    private function getChunksDirectoryPath(string $fileId): string
-    {
-        $ds = \DIRECTORY_SEPARATOR;
-
-        return $this->getChunkedUploadDirectoryPath().$ds.'chunks'.$ds.$fileId;
-    }
-
-    private function getChunkedUploadDirectoryPath(): string
-    {
-        return $this->config['temp_directory'].\DIRECTORY_SEPARATOR.'chunked-upload';
     }
 }

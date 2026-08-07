@@ -14,6 +14,8 @@ namespace Glavweb\UploaderBundle\Storage;
 use Glavweb\UploaderBundle\Exception\CropImageException;
 use Glavweb\UploaderBundle\Exception\FileCopyException;
 use Glavweb\UploaderBundle\File\FileInterface;
+use Glavweb\UploaderBundle\File\FileMetadata;
+use Symfony\Component\HttpFoundation\File\File;
 
 /**
  * Interface StorageInterface.
@@ -25,7 +27,7 @@ interface StorageInterface
     /**
      * Uploads a File instance to the configured storage.
      */
-    public function upload(FileInterface $file, string $directory, ?string $name): FileInterface;
+    public function upload(FileInterface $file, string $directory, ?string $name, bool $attachment = false): FileInterface;
 
     public function uploadTmpFileByLink(string $link): FileInterface;
 
@@ -46,8 +48,23 @@ interface StorageInterface
      */
     public function copyFile(FileInterface $file, ?string $newPath = null): FileInterface;
 
+    public function moveFile(FileInterface $file, string $newPath): void;
+
     /**
      * @throws CropImageException
      */
     public function cropImage(FileInterface $file, array $cropData): string;
+
+    public function getMetadata(string $filePathName): FileMetadata;
+
+    public function addFileChunk(File $file, string $fileId, int $chunkIndex): void;
+
+    public function hasAllFileChunks(string $fileId, int $chunkTotal): bool;
+
+    public function concatFileChunks(File $file, FileMetadata $metadata, string $fileId): FileInterface;
+
+    /**
+     * Cleanup trash files.
+     */
+    public function cleanup(): void;
 }

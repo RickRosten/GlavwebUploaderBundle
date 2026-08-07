@@ -13,8 +13,9 @@ namespace Glavweb\UploaderBundle\Storage;
 
 use Glavweb\UploaderBundle\Exception\FileCopyException;
 use Glavweb\UploaderBundle\File\FileInterface;
+use Glavweb\UploaderBundle\File\FileMetadata;
 use Glavweb\UploaderBundle\File\FilesystemFile;
-use Glavweb\UploaderBundle\File\FlysystemFile;
+use Glavweb\UploaderBundle\File\StorageFile;
 use Glavweb\UploaderBundle\Util\CropImage;
 use Glavweb\UploaderBundle\Util\FileUtils;
 use League\Flysystem\FilesystemException;
@@ -27,19 +28,21 @@ use Symfony\Component\Filesystem\Filesystem;
  *
  * @author Sergey Zvyagintsev <nitron.ru@gmail.com>
  */
-readonly class FlysystemStorage implements StorageInterface
+class FlysystemStorage extends LocalStorage
 {
-    /**
-     * FlysystemStorage constructor.
-     */
-    public function __construct(private FilesystemOperator $filesystem)
+    private FilesystemOperator $filesystem;
+
+    public function __construct(FilesystemOperator $filesystem, string $tempDirectoryPath)
     {
+        parent::__construct(new Filesystem(), $tempDirectoryPath);
+
+        $this->filesystem = $filesystem;
     }
 
     /**
      * @throws FilesystemException
      */
-    public function upload(FileInterface $file, string $directory, ?string $name = null): FileInterface
+    public function upload(FileInterface $file, string $directory, ?string $name = null, bool $attachment = false): FileInterface
     {
         /* @var File $file */
         if (null === $name) {
@@ -64,14 +67,19 @@ readonly class FlysystemStorage implements StorageInterface
         $originalName = $file->getClientOriginalName();
         $size = $file->getSize();
 
+        $storageFile = new StorageFile($this, $path, true);
+        $storageFile->setSize($size);
+        $storageFile->setOriginalName($originalName);
+        $storageFile->setMimeType($file->getMimeType());
+        $storageFile->setWidth($file->getWidth());
+        $storageFile->setHeight($file->getHeight());
+
         $symfonyFilesystem = new Filesystem();
-        $symfonyFilesystem->remove($file);
+        $symfonyFilesystem->remove($file->getPathname());
 
-        $flysystemFile = new FlysystemFile($this, $path);
-        $flysystemFile->setSize($size);
-        $flysystemFile->setOriginalName($originalName);
+        $storageFile->fetchMetadata();
 
-        return $flysystemFile;
+        return $storageFile;
     }
 
     public function uploadTmpFileByLink(string $link): FileInterface
@@ -81,11 +89,6 @@ readonly class FlysystemStorage implements StorageInterface
         return new FilesystemFile($file);
     }
 
-    /**
-     * @return FileInterface[]
-     *
-     * @throws FilesystemException
-     */
     public function uploadFiles(array $files, string $directory): array
     {
         $return = [];
@@ -101,7 +104,7 @@ readonly class FlysystemStorage implements StorageInterface
      */
     public function clearOldFiles($directory, $lifetime): void
     {
-        /** @var FlysystemFile $file */
+        /** @var StorageFile $file */
         foreach ($this->getFilesByDirectory($directory) as $file) {
             $nowTimestamp = new \DateTime()->getTimestamp();
             $fileTimestamp = $file->getLastModifiedAt()->getTimestamp();
@@ -155,7 +158,7 @@ readonly class FlysystemStorage implements StorageInterface
     /**
      * @throws FilesystemException
      */
-    public function moveFile(FlysystemFile $file, string $newPath): void
+    public function moveFile(FileInterface $file, string $newPath): void
     {
         $this->filesystem->move($file->getPathname(), $newPath);
     }
@@ -179,11 +182,11 @@ readonly class FlysystemStorage implements StorageInterface
 
         $this->filesystem->copy($path, $newPath);
 
-        return new FlysystemFile($this, $newPath);
+        return new StorageFile($this, $newPath, true);
     }
 
     /**
-     * @return FlysystemFile[]
+     * @return StorageFile[]
      *
      * @throws FilesystemException
      */
@@ -194,16 +197,17 @@ readonly class FlysystemStorage implements StorageInterface
 
         foreach ($listing as $item) {
             $path = $item['path'];
-            $basename = $item['basename'];
+            $basename = FileUtils::basename($path);
 
             if ($onlyFileNames && !\in_array($basename, $onlyFileNames, true)) {
                 continue;
             }
 
-            $flysystemFile = new FlysystemFile($this, $path);
-            $flysystemFile->setMetadata($item);
+            $storageFile = new StorageFile($this, $path, true);
+            $storageFile->setSize($item['file_size']);
+            $storageFile->setLastModifiedAt((new \DateTime())->setTimestamp($item['last_modified']));
 
-            $files[] = $flysystemFile;
+            $files[] = $storageFile;
         }
 
         return $files;
@@ -213,7 +217,7 @@ readonly class FlysystemStorage implements StorageInterface
     {
         $path = \sprintf('%s/%s', $directory, $name);
 
-        return new FlysystemFile($this, $path);
+        return new StorageFile($this, $path, true);
     }
 
     /**
@@ -229,7 +233,7 @@ readonly class FlysystemStorage implements StorageInterface
     /**
      * @throws FilesystemException
      */
-    public function getSize(FlysystemFile $file): int
+    public function getSize(StorageFile $file): int
     {
         return $this->filesystem->fileSize($file->getPathname());
     }
@@ -237,7 +241,7 @@ readonly class FlysystemStorage implements StorageInterface
     /**
      * @throws FilesystemException
      */
-    public function getTimestamp(FlysystemFile $file): int
+    public function getTimestamp(StorageFile $file): int
     {
         return $this->filesystem->lastModified($file->getPathname());
     }
@@ -245,8 +249,25 @@ readonly class FlysystemStorage implements StorageInterface
     /**
      * @throws FilesystemException
      */
-    public function getMimeType(FlysystemFile $file): string
+    public function getMimeType(StorageFile $file): string
     {
         return $this->filesystem->mimeType($file->getPathname());
+    }
+
+    /**
+     * @throws FilesystemException
+     */
+    public function getMetadata(string $filePathName): FileMetadata
+    {
+        $size = $this->filesystem->fileSize($filePathName);
+        $timestamp = $this->filesystem->lastModified($filePathName);
+        $mimetype = $this->filesystem->mimeType($filePathName);
+
+        $metadata = new FileMetadata();
+        $metadata->size = $size;
+        $metadata->mimeType = $mimetype;
+        $metadata->modificationTime = (new \DateTime())->setTimestamp($timestamp);
+
+        return $metadata;
     }
 }

@@ -40,14 +40,12 @@ class ImageProvider extends FileProvider
         $file = $link;
         $this->file = $file;
 
-        [$width, $height] = @getimagesize($file->getPathname());
-
         $this->setName($file->getClientOriginalName());
         $this->setProviderReference(null);
         $this->setContentSize($file->getSize());
         $this->setContentType($file->getMimeType());
-        $this->setHeight($height);
-        $this->setWidth($width);
+        $this->setHeight($file->getHeight());
+        $this->setWidth($file->getWidth());
         $this->setDescription(null);
         $this->setThumbnailUrl(null);
 
@@ -57,7 +55,7 @@ class ImageProvider extends FileProvider
     #[\Override]
     public function checkLink(FileInterface|string $link): bool
     {
-        return $link instanceof FileInterface && (@getimagesize($link->getPathname()) || $this->isSvgFile($link));
+        return $link instanceof FileInterface && ($link->isImage() || $this->isSvgFile($link));
     }
 
     #[\Override]

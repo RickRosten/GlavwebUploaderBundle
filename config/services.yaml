@@ -3,6 +3,8 @@ parameters:
   glavweb_uploader.provider.file.class: Glavweb\UploaderBundle\Provider\FileProvider
   glavweb_uploader.provider.image.class: Glavweb\UploaderBundle\Provider\ImageProvider
   glavweb_uploader.provider.youtube.class: Glavweb\UploaderBundle\Provider\YoutubeProvider
+  glavweb_uploader.storage.s3.bucket: ''
+  glavweb_uploader.storage.s3.client: null
 
 services:
   Glavweb\UploaderBundle\Controller\:
@@ -40,12 +42,34 @@ services:
   Glavweb\UploaderBundle\Model\OrmModelManager:
     alias: glavweb_uploader.model_manager.orm
 
+  glavweb_uploader.model.multipart_upload_manager.orm:
+    class: 'Glavweb\UploaderBundle\Model\MultipartUploadManager'
+    public: true
+    arguments:
+      - '@doctrine'
+
+  Glavweb\UploaderBundle\Model\MultipartUploadManager:
+    alias: glavweb_uploader.model.multipart_upload_manager.orm
+
   glavweb_uploader.storage.filesystem:
     class: 'Glavweb\UploaderBundle\Storage\FilesystemStorage'
     public: true
+    arguments:
+      - '%glavweb_uploader.temp_directory%'
 
   Glavweb\UploaderBundle\Storage\FilesystemStorage:
     alias: glavweb_uploader.storage.filesystem
+
+  glavweb_uploader.storage.s3:
+    class: 'Glavweb\UploaderBundle\Storage\AwsS3Storage'
+    public: true
+    arguments:
+      - '%glavweb_uploader.storage.s3.bucket%'
+      - '@glavweb_uploader.storage.s3.client'
+      - '@glavweb_uploader.model.multipart_upload_manager.orm'
+
+  Glavweb\UploaderBundle\Storage\AwsS3Storage:
+    alias: glavweb_uploader.storage.s3
 
   glavweb_uploader.media_listener:
     class: 'Glavweb\UploaderBundle\Entity\Listener\MediaListener'

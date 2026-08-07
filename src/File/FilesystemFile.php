@@ -76,6 +76,25 @@ class FilesystemFile implements FileInterface
         return $this->file->guessExtension();
     }
 
+    public function isImage(): ?bool
+    {
+        return false !== getimagesize($this->getPathname());
+    }
+
+    public function getWidth(): ?int
+    {
+        $imageSize = getimagesize($this->getPathname());
+
+        return false !== $imageSize ? $imageSize[0] : null;
+    }
+
+    public function getHeight(): ?int
+    {
+        $imageSize = getimagesize($this->getPathname());
+
+        return false !== $imageSize ? $imageSize[1] : null;
+    }
+
     public function move(string $directory, ?string $name = null): static
     {
         $this->file = $this->file->move($directory, $name);

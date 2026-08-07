@@ -15,6 +15,7 @@ use Glavweb\UploaderBundle\Exception\Base64DecodingException;
 use Glavweb\UploaderBundle\Exception\CropImageException;
 use Glavweb\UploaderBundle\Exception\FileNotFoundException;
 use Glavweb\UploaderBundle\File\FileInterface;
+use Glavweb\UploaderBundle\File\FileMetadata;
 use Glavweb\UploaderBundle\File\FilesystemFile;
 use Glavweb\UploaderBundle\Util\CropImage;
 use Glavweb\UploaderBundle\Util\FileUtils;
@@ -22,15 +23,21 @@ use InvalidArgumentException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Mime\MimeTypes;
 
 /**
  * Class FilesystemStorage.
  *
  * @author Andrey Nilov <nilov@glavweb.ru>
  */
-class FilesystemStorage implements StorageInterface
+class FilesystemStorage extends LocalStorage
 {
-    public function upload(FileInterface $file, string $directory, ?string $name = null): FileInterface
+    public function __construct(string $tempDirectoryPath)
+    {
+        parent::__construct(new Filesystem(), $tempDirectoryPath);
+    }
+
+    public function upload(FileInterface $file, string $directory, ?string $name = null, bool $attachment = false): FileInterface
     {
         /* @var File $file */
         if (null === $name) {
@@ -169,5 +176,43 @@ class FilesystemStorage implements StorageInterface
         }
 
         return $pathname;
+    }
+
+    public function moveFile(FileInterface $file, string $newPath): void
+    {
+        $filesystem = new Filesystem();
+        $filesystem->rename($file->getPathname(), $newPath);
+    }
+
+    public function getMetadata(string $filePathName): FileMetadata
+    {
+        $metadata = new FileMetadata();
+        $metadata->size = $this->getSize($filePathName);
+        $metadata->mimeType = $this->getMimeType($filePathName);
+        $metadata->modificationTime = new \DateTimeImmutable('@'.$this->getTimestamp($filePathName));
+        $metadata->isImage = false;
+
+        $imageSize = getimagesize($filePathName);
+        if (false !== $imageSize) {
+            $metadata->isImage = true;
+            [$metadata->width, $metadata->height] = $imageSize;
+        }
+
+        return $metadata;
+    }
+
+    public function getMimeType(string $filePathName): ?string
+    {
+        return MimeTypes::getDefault()->guessMimeType($filePathName) ?: null;
+    }
+
+    public function getTimestamp(string $filePathName): int
+    {
+        return \filemtime($filePathName);
+    }
+
+    public function getSize(string $filePathName): int
+    {
+        return \filesize($filePathName);
     }
 }

@@ -30,7 +30,14 @@ class GlavwebUploaderBundle extends AbstractBundle
 
     public function loadExtension(array $config, ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
+        $container->setParameter('glavweb_uploader.temp_directory', $config['temp_directory']);
+
         $configurator->import(__DIR__.'/../config/services.yaml');
+
+        $s3ClientId = $container->getParameter('glavweb_uploader.storage.s3.client');
+        if (\is_string($s3ClientId) && '' !== $s3ClientId) {
+            $container->setAlias('glavweb_uploader.storage.s3.client', $s3ClientId);
+        }
 
         if (!empty($config['mappings_defaults'])) {
             $config = $this->applyMappingsDefaults($config);

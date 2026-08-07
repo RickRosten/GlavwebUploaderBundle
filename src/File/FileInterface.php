@@ -41,6 +41,21 @@ interface FileInterface
     public function getMimeType(): ?string;
 
     /**
+     * Returns whether the file is an image.
+     */
+    public function isImage(): ?bool;
+
+    /**
+     * Returns the image width in pixels.
+     */
+    public function getWidth(): ?int;
+
+    /**
+     * Returns the image height in pixels.
+     */
+    public function getHeight(): ?int;
+
+    /**
      * Returns the basename of the file.
      */
     public function getBasename(): string;

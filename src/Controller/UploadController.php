@@ -144,10 +144,8 @@ class UploadController extends AbstractController
         if (isset($config['chunk_upload']) && $uploaderManager->isChunkUpload($request)) {
             $concatenatedFile = $uploaderManager->handleChunkUpload($request, $file);
 
-            if ($concatenatedFile instanceof File) {
-                $originalFileName = $file instanceof UploadedFile ? $file->getClientOriginalName() : null;
-
-                $file = new FilesystemFile($concatenatedFile, $originalFileName);
+            if ($concatenatedFile) {
+                $file = $concatenatedFile;
             } else {
                 return;
             }
@@ -165,13 +163,24 @@ class UploadController extends AbstractController
             $file = new FilesystemFile($file);
         }
 
-        // validate
-        $this->validate($uploaderManager, $file, $request, $context, $eventDispatcher);
+        try {
+            // validate
+            $this->validate($uploaderManager, $file, $request, $context, $eventDispatcher);
 
-        // pre upload dispatch
-        $this->dispatchPreUploadEvent($uploaderManager, $file, $response, $request, $context, $eventDispatcher);
+            // pre upload dispatch
+            $this->dispatchPreUploadEvent($uploaderManager, $file, $response, $request, $context, $eventDispatcher);
 
-        $uploadResult = $uploaderManager->upload($file, $context, $requestId);
+            $uploadResult = $uploaderManager->upload($file, $context, $requestId);
+        } catch (\Throwable $e) {
+            try {
+                $uploaderManager->removeFileFromStorage($file);
+            } catch (\Exception) {
+                // ignore
+            }
+
+            throw $e;
+        }
+
         $uploadedFile = $uploadResult['uploadedFile'];
         $media = $uploadResult['media'];
 
