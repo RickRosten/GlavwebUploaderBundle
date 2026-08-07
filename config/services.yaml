@@ -65,7 +65,7 @@ services:
     public: true
     arguments:
       - '%glavweb_uploader.storage.s3.bucket%'
-      - '@glavweb_uploader.storage.s3.client'
+      - '@?glavweb_uploader.storage.s3.client'
       - '@glavweb_uploader.model.multipart_upload_manager.orm'
 
   Glavweb\UploaderBundle\Storage\AwsS3Storage:
