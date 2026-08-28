@@ -73,7 +73,12 @@ class GlavwebUploaderBundle extends AbstractBundle
                 $value = $contextConfig[$defaultKey] ?? null;
 
                 if ($extendDefaults && \is_array($value) && \is_array($defaultValue)) {
-                    $contextConfig[$defaultKey] = array_unique(array_merge($defaultValue, $value));
+                    $contextConfig[$defaultKey] = match (true) {
+                        $value === [] => $defaultValue,
+                        $defaultValue === [] => $value,
+                        \array_is_list($value) || \array_is_list($defaultValue) => \array_unique(\array_merge($defaultValue, $value)),
+                        default => \array_replace($defaultValue, $value),
+                    };
                 }
 
                 if (null === $value) {
