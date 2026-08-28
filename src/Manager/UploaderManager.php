@@ -413,7 +413,7 @@ class UploaderManager
             $files[] = $storage->getFile($directory, $contentPath);
         }
 
-        if ($thumbnailPath = $media->getThumbnailPath() && $thumbnailPath != $contentPath && $storage->isFile($directory, $contentPath)) {
+        if (($thumbnailPath = $media->getThumbnailPath()) && $thumbnailPath != $contentPath && $storage->isFile($directory, $contentPath)) {
             $files[] = $storage->getFile($directory, $thumbnailPath);
         }
 
