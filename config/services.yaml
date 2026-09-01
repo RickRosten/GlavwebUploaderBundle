@@ -162,3 +162,24 @@ services:
     class: 'Glavweb\UploaderBundle\Command\ClearOrphansCommand'
     tags:
       - { name: 'console.command' }
+
+  Glavweb\UploaderBundle\EventListener\MediaOrphanageDoctrineListener:
+    autowire: true
+    autoconfigure: true
+
+  Glavweb\UploaderBundle\Helper\UploaderHelper:
+    autowire: true
+    public: true
+
+  Glavweb\UploaderBundle\Mapping\MetadataReader:
+    autowire: true
+    public: true
+
+  Glavweb\UploaderBundle\Naming\OriginalNamer:
+    public: true
+
+  Glavweb\UploaderBundle\Naming\OriginalExtUniqueNamer:
+    public: true
+
+  Glavweb\UploaderBundle\Naming\SanitizedUniqidNamer:
+    public: true

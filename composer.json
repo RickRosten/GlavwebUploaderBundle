@@ -1,5 +1,6 @@
 {
     "name": "glavweb/uploader-bundle",
+    "version": "4.2.0",
     "description": "Symfony GlavwebUploaderBundle",
     "authors": [
         {
