@@ -59,7 +59,12 @@ class GlavwebUploaderBundle extends AbstractBundle
     }
 
     /**
+     * Applies mappings_defaults to every mapping: performs a deep merge
+     * with fallback to the default values.
+     *
      * @param array<string, mixed> $config
+     *
+     * @return array<string, mixed>
      */
     private function applyMappingsDefaults(array $config): array
     {
@@ -70,23 +75,71 @@ class GlavwebUploaderBundle extends AbstractBundle
             $defaults = $extendDefaults ? $config['mappings_defaults'] : self::DEFAULT_MAPPINGS_VALUES;
 
             foreach ($defaults as $defaultKey => $defaultValue) {
-                $value = $contextConfig[$defaultKey] ?? null;
-
-                if ($extendDefaults && \is_array($value) && \is_array($defaultValue)) {
-                    $contextConfig[$defaultKey] = match (true) {
-                        $value === [] => $defaultValue,
-                        $defaultValue === [] => $value,
-                        \array_is_list($value) || \array_is_list($defaultValue) => \array_unique(\array_merge($defaultValue, $value)),
-                        default => \array_replace($defaultValue, $value),
-                    };
-                }
-
-                if (null === $value) {
-                    $contextConfig[$defaultKey] = $defaultValue;
-                }
+                $contextConfig[$defaultKey] = $this->mergeDefaultValue(
+                    $contextConfig[$defaultKey] ?? null,
+                    $defaultValue,
+                    $extendDefaults
+                );
             }
         }
 
         return $config;
+    }
+
+    /**
+     * Merges the mapping value with the default one:
+     * null in the mapping means fallback to the default.
+     */
+    private function mergeDefaultValue(mixed $value, mixed $defaultValue, bool $extendDefaults): mixed
+    {
+        if (null === $value) {
+            return $defaultValue;
+        }
+
+        if ($extendDefaults && \is_array($value) && \is_array($defaultValue)) {
+            return $this->mergeArrays($defaultValue, $value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Recursively (deep) merges the default array with the mapping value.
+     * Mapping values have priority, null in the mapping means fallback to the default.
+     *
+     * Numeric (list) arrays are merged with duplicates removed and keys
+     * renumbered — they must never become associative.
+     */
+    private function mergeArrays(array $defaultValue, array $value): array
+    {
+        if ([] === $value) {
+            return $defaultValue;
+        }
+
+        if ([] === $defaultValue) {
+            return $value;
+        }
+
+        if (\array_is_list($value) || \array_is_list($defaultValue)) {
+            // array_values() removes the gaps left by array_unique() — the list stays a list
+            return \array_values(\array_unique(\array_merge($defaultValue, $value)));
+        }
+
+        $merged = $defaultValue;
+
+        foreach ($value as $key => $val) {
+            if (null === $val) {
+                // null in the mapping value — keep the default
+                continue;
+            }
+
+            if (\is_array($val) && isset($merged[$key]) && \is_array($merged[$key])) {
+                $merged[$key] = $this->mergeArrays($merged[$key], $val);
+            } else {
+                $merged[$key] = $val;
+            }
+        }
+
+        return $merged;
     }
 }
