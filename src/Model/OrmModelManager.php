@@ -25,8 +25,6 @@ use Glavweb\UploaderBundle\Entity\Repository\MediaRepository;
  */
 class OrmModelManager implements ModelManagerInterface
 {
-    private array $cachedMedias = [];
-
     public function __construct(protected Registry $doctrine)
     {
     }
@@ -199,19 +197,12 @@ class OrmModelManager implements ModelManagerInterface
     /**
      * Returns array of file entities.
      */
-    public function findOrphans(string $requestId): array
+    public function findMediasByRequestId(string $requestId): array
     {
-        if (!isset($this->cachedMedias[$requestId])) {
-            $em = $this->doctrine->getManager();
-            $repository = $em->getRepository(Media::class);
+        $em = $this->doctrine->getManager();
+        $repository = $em->getRepository(Media::class);
 
-            $this->cachedMedias[$requestId] = $repository->findBy([
-                'requestId' => $requestId,
-                'isOrphan' => true,
-            ]);
-        }
-
-        return $this->cachedMedias[$requestId];
+        return $repository->findBy(['requestId' => $requestId]);
     }
 
     /**

@@ -294,7 +294,7 @@ class UploaderManager
         $this->eventDispatcher->addListener(KernelEvents::TERMINATE, fn () => $this->removeMarkedMedia($requestId));
         $this->renameMarkedMedia($requestId);
 
-        return $this->uploadOrphans($requestId);
+        return $this->claimMedias($requestId);
     }
 
     /**
@@ -341,9 +341,9 @@ class UploaderManager
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function uploadOrphans(string $requestId): array
+    public function claimMedias(string $requestId): array
     {
-        $medias = $this->getModelManager()->findOrphans($requestId);
+        $medias = $this->getModelManager()->findMediasByRequestId($requestId);
 
         // update file models
         $uploadMedias = [];

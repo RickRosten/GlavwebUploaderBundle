@@ -47,7 +47,7 @@ interface ModelManagerInterface
     /**
      * Returns array of file entities.
      */
-    public function findOrphans(string $requestId): array;
+    public function findMediasByRequestId(string $requestId): array;
 
     public function findOneBySecuredId(string $securedId): ?MediaInterface;
 
