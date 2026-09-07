@@ -125,7 +125,7 @@ class UploaderManager
      * @throws NotFoundExceptionInterface
      * @throws ProviderNotFoundException
      */
-    public function upload(FileInterface|string $link, string $context, string $requestId): array
+    public function upload(FileInterface|string $link, string $context, ?string $requestId = null): array
     {
         $this->providers = null;
         $provider = $this->getProvider($context, $link);

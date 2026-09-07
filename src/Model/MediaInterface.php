@@ -198,7 +198,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setRequestId(string $requestId);
+    public function setRequestId(?string $requestId);
 
     /**
      * Get requestId.
