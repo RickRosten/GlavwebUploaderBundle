@@ -30,7 +30,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setContext(string $context);
+    public function setContext(?string $context);
 
     /**
      * Get context.
@@ -44,7 +44,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setProviderName(string $providerName);
+    public function setProviderName(?string $providerName);
 
     /**
      * Get providerName.
@@ -58,7 +58,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setProviderReference(string $providerReference);
+    public function setProviderReference(?string $providerReference);
 
     /**
      * Get providerReference.
@@ -72,7 +72,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setContentPath(string $contentPath);
+    public function setContentPath(?string $contentPath);
 
     /**
      * Get contentPath.
@@ -86,7 +86,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setThumbnailPath(string $thumbnailPath);
+    public function setThumbnailPath(?string $thumbnailPath);
 
     /**
      * Get thumbnailPath.
@@ -100,7 +100,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setName(string $name);
+    public function setName(?string $name);
 
     /**
      * Get name.
@@ -114,7 +114,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setDescription(string $description);
+    public function setDescription(?string $description);
 
     /**
      * Get description.
@@ -128,7 +128,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setWidth(int $width);
+    public function setWidth(?int $width);
 
     /**
      * Get width.
@@ -142,7 +142,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setHeight(int $height);
+    public function setHeight(?int $height);
 
     /**
      * Get height.
@@ -156,7 +156,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setContentType(string $contentType);
+    public function setContentType(?string $contentType);
 
     /**
      * Get contentType.
@@ -170,7 +170,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setContentSize(int $contentSize);
+    public function setContentSize(?int $contentSize);
 
     /**
      * Get contentSize.
@@ -212,7 +212,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setToken(string $token);
+    public function setToken(?string $token);
 
     /**
      * Get token.
@@ -226,7 +226,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setPosition(int $position);
+    public function setPosition(?int $position);
 
     /**
      * Get position.
@@ -240,7 +240,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setUpdatedAt(\DateTime $updatedAt);
+    public function setUpdatedAt(?\DateTime $updatedAt);
 
     /**
      * Get updatedAt.
@@ -254,7 +254,7 @@ interface MediaInterface
      *
      * @return MediaInterface
      */
-    public function setCreatedAt(\DateTime $createdAt);
+    public function setCreatedAt(?\DateTime $createdAt);
 
     /**
      * Get createdAt.

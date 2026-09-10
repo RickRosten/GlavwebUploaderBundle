@@ -288,7 +288,7 @@ class Media implements MediaInterface, \Stringable
     /**
      * Set height.
      */
-    public function setHeight(int $height): static
+    public function setHeight(?int $height): static
     {
         $this->height = $height;
 
@@ -324,7 +324,7 @@ class Media implements MediaInterface, \Stringable
     /**
      * Set contentSize.
      */
-    public function setContentSize(int $contentSize): static
+    public function setContentSize(?int $contentSize): static
     {
         $this->contentSize = $contentSize;
 
