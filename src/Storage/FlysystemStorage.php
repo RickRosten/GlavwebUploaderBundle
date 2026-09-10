@@ -176,7 +176,7 @@ class FlysystemStorage extends LocalStorage
                 throw new FileCopyException($file, $newPath, 'File already exists');
             }
         } else {
-            $fileName = FileUtils::generateFileCopyBasename($file, static fn (string $path): bool => !$this->filesystem->has(FileUtils::path($file->getPath(), $path)));
+            $fileName = FileUtils::generateFileCopyBasename($file, fn (string $path): bool => !$this->filesystem->has(FileUtils::path($file->getPath(), $path)));
             $newPath = FileUtils::path($file->getPath(), $fileName);
         }
 
