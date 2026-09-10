@@ -191,10 +191,10 @@ class MappingsDefaultsMergeTest extends TestCase
     }
 
     /**
-     * Verifies that an empty list in the mapping is replaced
-     * by the defaults list.
+     * Verifies that an explicitly specified empty list in the mapping
+     * fully overrides the defaults list.
      */
-    public function testEmptyMappingListFallsBackToDefaults(): void
+    public function testEmptyMappingListOverridesDefaults(): void
     {
         $config = $this->processConfig([
             'mappings_defaults' => [
@@ -207,8 +207,7 @@ class MappingsDefaultsMergeTest extends TestCase
             ],
         ]);
 
-        // An empty list in the mapping is replaced by the default one
-        self::assertSame(['image/png'], $config['mappings']['image']['allowed_mimetypes']);
+        self::assertSame([], $config['mappings']['image']['allowed_mimetypes']);
     }
 
     /**
@@ -420,6 +419,21 @@ class MappingsDefaultsMergeTest extends TestCase
 
         // null in the value — fall back to the whole default branch
         self::assertSame(['image' => ['quality' => 80]], $merged);
+    }
+
+    /**
+     * Verifies that an explicitly specified empty array in the value
+     * fully overrides the non-empty default.
+     */
+    public function testMergeArraysEmptyValueOverridesDefault(): void
+    {
+        $merged = $this->mergeArrays(
+            ['image/png', 'image/jpeg'],
+            []
+        );
+
+        // Пустой массив в маппинге — явное переопределение дефолта
+        self::assertSame([], $merged);
     }
 
     /**

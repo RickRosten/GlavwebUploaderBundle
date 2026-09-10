@@ -105,7 +105,9 @@ class GlavwebUploaderBundle extends AbstractBundle
 
     /**
      * Recursively (deep) merges the default array with the mapping value.
-     * Mapping values have priority, null in the mapping means fallback to the default.
+     * Mapping values have priority. An explicitly specified empty array
+     * in the mapping fully overrides the default value; null in the
+     * mapping means fallback to the default.
      *
      * Numeric (list) arrays are merged with duplicates removed and keys
      * renumbered — they must never become associative.
@@ -113,7 +115,7 @@ class GlavwebUploaderBundle extends AbstractBundle
     private function mergeArrays(array $defaultValue, array $value): array
     {
         if ([] === $value) {
-            return $defaultValue;
+            return [];
         }
 
         if ([] === $defaultValue) {
